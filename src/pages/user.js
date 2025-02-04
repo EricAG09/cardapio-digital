@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useCart } from '../components/carrinho/cartContext';
+import { useCart } from '../context/cartContext';
 
 const Usuario = () => {
   const [produtos, setProdutos] = useState([]);
@@ -20,8 +20,9 @@ const Usuario = () => {
 
   //adicionando pedido ao carrinho 
   const handleAddCart = (product) => {
-    addToCart(product); // Usando a função do contexto para adicionar ao carrinho
-    alert('Produto adicionado ao carrinho!');
+    console.log("Produto que está sendo enviado para o carrinho:", product);
+    addToCart(product);
+    alert("Produto adicionado ao carrinho!");
   };
 
   return (

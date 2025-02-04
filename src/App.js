@@ -2,14 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Admin from './pages/Admin';
 import Usuario from './pages/user';
-import Header from './components/header';
-import { CartProvider } from './components/carrinho/cartContext';
+import { CartProvider } from './context/cartContext';
+import Navbar from './components/navbar/navbar';
 
 function App() {
   return (
     <CartProvider>
       <Router>
-        <Header />
+        <Navbar />
         <Routes>
           <Route path="/admin" element={<Admin />} />
           <Route path="/" element={<Usuario />} />

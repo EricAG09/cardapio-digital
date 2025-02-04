@@ -9,6 +9,11 @@ const Admin = () => {
     image: null,
   });
 
+  const [produtos, setProdutos] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -27,58 +32,69 @@ const Admin = () => {
     data.append('image', formData.image);
 
     try {
+      setLoading(true);
       await axios.post('http://localhost:5000/produtos', data);
       alert('Produto adicionado com sucesso!');
+      fetchProdutos(); // Atualiza a lista de produtos
+      resetForm();
     } catch (err) {
       console.error('Erro ao adicionar produto:', err.response?.data || err.message);
       alert('Erro ao adicionar produto.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const [produtos, setProdutos] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  
+  const fetchProdutos = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/produtos');
+      setProdutos(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const fetchProdutos = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/produtos');
-        setProdutos(response.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
     fetchProdutos();
   }, []);
 
   const handleEdit = (produto) => {
     setSelectedProduct(produto);
     setIsEditing(true);
-  }
+    setFormData({
+      name: produto.name,
+      description: produto.description,
+      price: produto.price,
+      image: null, // Resetar a imagem para não sobrescrever
+    });
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append('name', selectedProduct.name);
-    data.append('description', selectedProduct.description);
-    data.append('price', selectedProduct.price);
-    if (selectedProduct.image instanceof File) {
-      data.append('image', selectedProduct.image);
+    data.append('name', formData.name);
+    data.append('description', formData.description);
+    data.append('price', formData.price);
+    if (formData.image) {
+      data.append('image', formData.image);
     }
 
     try {
+      setLoading(true);
       const response = await axios.put(`http://localhost:5000/produtos/${selectedProduct._id}`, data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setProdutos(produtos.map(prod => prod._id === selectedProduct._id ? response.data : prod));
+      setProdutos(produtos.map(prod => (prod._id === selectedProduct._id ? response.data : prod)));
       alert('Produto atualizado com sucesso!');
       setIsEditing(false);
+      resetForm();
     } catch (error) {
       alert('Erro ao atualizar produto.');
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,21 +103,31 @@ const Admin = () => {
     if (!confirmDelete) return;
 
     try {
-        const response = await axios.delete(`http://localhost:5000/produtos/${id}`);
-        alert(response.data.message);
-        setProdutos((prevProdutos) => prevProdutos.filter((produto) => produto._id !== id));
+      const response = await axios.delete(`http://localhost:5000/produtos/${id}`);
+      alert(response.data.message);
+      setProdutos((prevProdutos) => prevProdutos.filter((produto) => produto._id !== id));
     } catch (error) {
-        const errorMessage = error.response?.data?.message || error.message || "Erro desconhecido";
-        console.error("Erro ao deletar produto:", errorMessage);
-        alert(errorMessage);
+      const errorMessage = error.response?.data?.message || error.message || "Erro desconhecido";
+      console.error("Erro ao deletar produto:", errorMessage);
+      alert(errorMessage);
     }
-};
+  };
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      image: null,
+    });
+    setIsEditing(false);
+    setSelectedProduct(null);
+  };
 
   return (
     <div className="p-5">
       <h2 className="text-xl font-bold">Adicionar Produto</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={isEditing ? handleUpdate : handleSubmit} className="space-y-4">
         <input
           type="text"
           name="name"
@@ -133,9 +159,10 @@ const Admin = () => {
           name="image"
           onChange={handleFileChange}
           className="w-full p-2 border"
-          required
         />
-        <button type="submit" className="p-2 bg-blue-500 text-white">Adicionar</button>
+        <button type="submit" className="p-2 bg-blue-500 text-white">
+          {isEditing ? 'Atualizar' : 'Adicionar'}
+        </button>
       </form>
 
       <div className="grid grid-cols-3 gap-4 mt-4">
@@ -170,30 +197,31 @@ const Admin = () => {
             <h2 className="text-lg font-bold">Editar Produto</h2>
             <input
               type="text"
-              value={selectedProduct.name}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, name: e.target.value })}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Nome"
               className="block w-full border rounded p-2 mb-2"
             />
             <textarea
-              value={selectedProduct.description}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, description: e.target.value })}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Descrição"
               className="block w-full border rounded p-2 mb-2"
             ></textarea>
             <input
               type="number"
-              value={selectedProduct.price}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, price: e.target.value })}
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               placeholder="Preço"
               className="block w-full border rounded p-2 mb-2"
             />
             <input
               type="file"
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, image: e.target.files[0] })}
+              onChange={(e) => setFormData({ ...formData, image: e.target.files[0] })}
               className="w-full p-2 border"
             />
             <button type="submit" className="bg-green-500 text-white py-1 px-3 rounded">
+              {loading && <p className="text-blue-500">Carregando...</p>}
               Atualizar
             </button>
             <button

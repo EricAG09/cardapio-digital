@@ -1,17 +1,20 @@
 import React from 'react';
-import { useCart } from './cartContext'; // Ajuste o caminho
+import { useCart } from './cartContext';
 
-const ProductCard = ({ product }) => {
+const Product = ({ product }) => {
   const { addToCart } = useCart();
 
+  const handleAddToCart = () => {
+    addToCart(product); // Adiciona o produto ao carrinho
+  };
+
   return (
-    <div className="product-card">
-      <h2>{product.name}</h2>
-      <p>{product.description}</p>
-      <p>R$ {product.price}</p>
-      <button onClick={() => addToCart(product)}>Adicionar ao Carrinho</button>
+    <div>
+      <h3>{product.name}</h3>
+      <p>Preço: R$ {product.price.toFixed(2)}</p>
+      <button onClick={handleAddToCart}>Adicionar ao carrinho</button>
     </div>
   );
 };
 
-export default ProductCard;
+export default Product;
